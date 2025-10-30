@@ -25,7 +25,7 @@ services:
       database:
         condition: service_healthy
     volumes:
-      - files:~/files
+      - files:/home/bun/files
     networks:
       - message-network
     healthcheck:
