@@ -1,40 +1,11 @@
 services:
   api:
-    image: vierkant/message-server
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    ports:
-      - "${PORT:-3000}:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DB_HOST=${DB_HOST:-database}
-      - DB_PORT=5432
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SECRET=${SECRET}
-      - RATE_LIMIT=${RATE_LIMIT:-100}
-      - VERIFY_TOKEN=${VERIFY_TOKEN}
-      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
-    depends_on:
-      database:
-        condition: service_healthy
-    volumes:
-      - files:~/files
+    extends:
+      file: docker-compose.internal.yml
+      service: api
     networks:
       - message-network
       - webserver
-    healthcheck:
-      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     labels:
       - traefik.enable=true
       - traefik.docker.network=webserver
@@ -44,26 +15,10 @@ services:
       - traefik.http.routers.whatsappproject.tls.certresolver=le
       - traefik.http.services.whatsappproject.loadbalancer.server.port=3000
       - traefik.http.services.whatsappproject.loadbalancer.server.scheme=http
-
   database:
-    image: postgres:15-alpine
-    hostname: database
-    restart: unless-stopped
-    ports:
-      - "${DB_EXTERNAL_PORT:-5432}:5432"
-    environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - message-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    extends:
+      file: docker-compose.internal.yml
+      service: database
 
 networks:
   message-network:
