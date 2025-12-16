@@ -20,7 +20,7 @@ services:
       - SECRET=${SECRET}
       - RATE_LIMIT=${RATE_LIMIT:-100}
       - VERIFY_TOKEN=${VERIFY_TOKEN}
-      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - APP_SECRET=${APP_SECRET}
     depends_on:
       database:
         condition: service_healthy
