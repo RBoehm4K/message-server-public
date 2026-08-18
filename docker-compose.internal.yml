@@ -21,8 +21,11 @@ services:
       - RATE_LIMIT=${RATE_LIMIT:-100}
       - VERIFY_TOKEN=${VERIFY_TOKEN}
       - APP_SECRET=${APP_SECRET}
+      - REDIS_URL=${REDIS_URL:-redis://cache:6379}
     depends_on:
       database:
+        condition: service_healthy
+      cache:
         condition: service_healthy
     volumes:
       - files:/home/bun/files
@@ -53,6 +56,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  cache:
+    image: redis:7-alpine
+    hostname: cache
+    restart: unless-stopped
+    # Rate-limit counters are cheap to lose, but queued sends and undelivered webhook notifications
+    # are not, so the append-only file is on: a restart must not drop pending retries.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - message-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   message-network:
@@ -60,5 +81,7 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
   files:
