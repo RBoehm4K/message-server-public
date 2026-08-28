@@ -1,7 +1,10 @@
 services:
   api:
-    image: vierkant/message-server
-    build: 
+    # `scripts/publish.ts` sets APP_VERSION to the number it just wrote to package.json, so a push is
+    # tagged with the build it contains; it re-tags that same image `latest` afterwards. Everything
+    # else — `bun run docker`, `bun run build` — leaves the variable unset and works on `latest`.
+    image: vierkant/message-server:${APP_VERSION:-latest}
+    build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
@@ -12,6 +15,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # Handed to the container so the version it reports is the tag it was pulled as, not just
+      # whatever `package.json` inside the image says. Empty when unset, which `src/version.ts`
+      # ignores in favour of the manifest.
+      - APP_VERSION=${APP_VERSION:-}
       - DB_HOST=${DB_HOST:-database}
       - DB_PORT=5432
       - DB_NAME=${DB_NAME}
